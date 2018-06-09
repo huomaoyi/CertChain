@@ -7,11 +7,17 @@ import "./safemath.sol";
 
 contract MetaCoin is Ownable{
 
-	 //using SafeMath for uint256;
-	address ownerOfContract = 0x627306090abab3a6e1400e9345bc60c78a8bef57;   //不是迅雷链
-	uint nullIndex = uint(-1);
+	address ownerOfContract = 0x6b5344B29E8E7e8e63f61321838f590fF9e7fB95;   //不是迅雷链
+	address nullAddress = 0x0;  //0地址
+	uint nullIndex = uint(-1); //没有在数组中找到
 	uint cooldownTime = 1 minutes;  //修改证书状态的冷却时间：CA修改无冷却
-	// 防重入
+	CertUser[] public certusers;    //  证书数组   长度有限吗，可能越界吗？
+	mapping (address => uint[]) mapToCertUserIndex; // 证书所有者地址-->证书数组
+	address[] public CAs;  // CA机构数组
+	mapping (address => uint) balances;
+	event Transfer(address indexed _from, address indexed _to, uint256 _value);
+
+	// 防重入------------------------------------------------------------------------
 	bool locked;
     modifier noReentrancy() {
         if(locked) throw;
@@ -19,18 +25,15 @@ contract MetaCoin is Ownable{
         _;
         locked = false;
     }
-
 	//-------------------------------------------------------------------------------
-		mapping (address => uint) balances;
-
-		event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
 		function MetaCoin() public {
-
+			
 			balances[tx.origin] = 100000;
 			CAs.push(ownerOfContract);
+			CAs.push(0xa0d3353751585e590fc7910be95f01a9f6fdfbbc);
 		}
-
+	
 		function sendCoin(address receiver, uint amount) public returns(bool sufficient) {
 		if (balances[msg.sender] < amount) return false;
 		balances[msg.sender] -= amount;
@@ -46,11 +49,11 @@ contract MetaCoin is Ownable{
 		function getBalance(address addr) public view returns(uint) {
 			return balances[addr];
 		}
-
+		
 		function getCertUserFirst() public view returns(string){
 			return certusers[0].CA;
 		}
-
+	
 
 	//-------------------------------------------------------------------------------
 	struct CertUser {
@@ -58,38 +61,27 @@ contract MetaCoin is Ownable{
 				string identityId;  //身份证号
 				string certnumber; //证书编号
 				string orgname;  //团队名称：火毛依
-				string hashstr;   //
+				string hashstr;   //  
 				address useraddress; // 王二的地址
 				string CA;  // 发证机构 ： 人民政府
 				address CAAddress;
 				uint userstate; // 0   1  锁定   2失效
 				uint readyTime;
 		}
-		uint constant maxNum = 10;
-		CertUser[] public certusers;    //  证书数组   长度有限吗，可能越界吗？
-
-		//mapping (string => address) mapToCA; // 人民政府 => 政府地址
-		//mapping (address => CertUser[]) mapToCertusers;   // 政府地址下的所有证书
-		//mapping (string  => address) mapToCAByCertnumber;
-
-		//function MetaCoin() public {
-		//	transferOwnership(ownerOfContract);
-		//}
-
 
 		  //合约拥有着设置CA和取消CA       数组的新增和删除返回的数据索引都无法获得
 		  // CA 操作
-		  address[] public CAs;
+
 		  function addCA(address CAAddress) public payable returns (uint CAIndex, bool error){
-			 require(msg.sender == ownerOfContract);
+			 //require(msg.sender == ownerOfContract);
 			 if(getCAByAddress(CAAddress) != nullIndex) {
 				 return (nullIndex, false);
 			 }
 			 return (CAs.push(CAAddress),true);
 		  }
-
+		  
 		  function getCAByAddress(address CAAddress) public view returns (uint CAIndex) {
-			  require(CAAddress != 0x0);
+			  require(CAAddress != nullAddress);
 			  for(uint i = 0; i < CAs.length; i++ ) {
 				 if(CAs[i] == CAAddress) {
 					 return i;
@@ -103,35 +95,33 @@ contract MetaCoin is Ownable{
 				for(uint i = index + 1; i < CAs.length; i++) {
 					CAs[i - 1] = CAs[i];
 				}
-				CAs[CAs.length - 1] = 0x0;
+				CAs[CAs.length - 1] = nullAddress;
 				CAs.length--;
 			}
 			return index;   // CA存在与否都能删除成功
 		}
+		 
 
-
-
-
-		//创建证书， 可以创建成功
+		//创建证书， 可以创建成功 ，其它数据为null仍可创建成功
 		function createCertUser(string _username, string _identityId, string _certnumber, string _orgname, string _hashstr
 		, address _useraddress, string _CA, address _CAAddress) public payable returns(string)  {
-			require(_useraddress != 0x0);
-			require(_CAAddress != 0x0);
-			uint i =1;
+			require(_useraddress != nullAddress);
+			require(_CAAddress != nullAddress);
 			if(getCAByAddress(_CAAddress) == nullIndex) {
-				return "please add to CA to white list first.";
+				return "invalid CA address, please add CA address to CAs first";
 			}
 			uint index = _getUniqueCertUserPos(_identityId, _certnumber);
 			if(index != nullIndex) {
-				return  "add false. the CertUser exists";
-			}
-			uint certUserIndex = certusers.push(CertUser({username:"aaa", identityId:_identityId, certnumber:_certnumber, orgname:_orgname
+				return  "add false, the CertUser has added before.";
+			} 			
+			uint certUserIndex = certusers.push(CertUser({username:_username, identityId:_identityId, certnumber:_certnumber, orgname:_orgname
 			, hashstr:_hashstr,useraddress: _useraddress, CA:_CA, CAAddress:_CAAddress, userstate:0, readyTime:now}));
+			mapToCertUserIndex[_useraddress].push(certUserIndex);
 			return "add success";
 		}
-
+	
 		//获取证书数组
-		function _getCertuses() private view returns (CertUser[]) {
+		function _getCertuses() public  view returns (CertUser[]) {
 			return certusers;
 		}
 
@@ -140,13 +130,18 @@ contract MetaCoin is Ownable{
 			CertUser[] memory allCertusers = _getCertuses();
 			for(uint i = 0; i < allCertusers.length; i++) {
 				if(keccak256(allCertusers[i].identityId) == keccak256(identityId)
-					&& keccak256(allCertusers[i].certnumber) == keccak256(certnumber)) {   //TO DO 字符串相等如何处理
+				&& keccak256(allCertusers[i].certnumber) == keccak256(certnumber)) {   //TO DO 字符串相等如何处理
 					return i;
 				}
 			}
 			return nullIndex;
 		}
 
+	    //获取指定地址的证书个数
+		function getArrayIndex(address _useraddress) public  view returns (uint len, uint[] rtn) {
+			return (mapToCertUserIndex[_useraddress].length, mapToCertUserIndex[_useraddress]);
+		}
+		
 
 		// 获取用户的所有证书
 		function getAllCertUsers() public view returns (string) {
@@ -162,7 +157,7 @@ contract MetaCoin is Ownable{
 //			}
 			return _stringMerge("aa","bb");
 		}
-
+			
 		// sha3(s1) == sha3(s2) sha3(s1,s2) == sha3(s1,s2,s3,s4)
 		function _stringEquals(string s1, string s2) private pure returns (bool istrue) {
 			if(bytes(s1).length != bytes(s2).length) return false;
@@ -187,22 +182,22 @@ contract MetaCoin is Ownable{
 			}
 			return string(rtn);
 		}
-
-		function verifyCertUser(string identityId, string certnumber) public view returns (bool istrue) {
+	   
+		function verifyCertUser(string identityId, string certnumber) public view returns (bool istrue) {  
 			for(uint i = 0; i < certusers.length; i++) {
 				if(_stringEquals(certusers[i].identityId,identityId) && _stringEquals(certusers[i].certnumber,certnumber)
 				&& certusers[i].userstate == 0)
 					return true;
-			}
-
+			}		 								
+			
 			return false;
 		}
 		// 王二 和人民政府可以获取证书
 		function getFirstCertUser(string identityId, string certnumber) public view returns
 		(string username, string identityId1, string certnumber1, string orgname, string hashstr
-		, address useraddress1, string CA, address CAAddress,uint32 userstate, uint32 readyTime) {
+		, address useraddress1, string CA, address CAAddress,uint32 userstate, uint32 readyTime) {  
 			//命名为index，会报DeclarationError: Identifier already declared，和下面声明冲突
-
+		
 			CertUser[] memory allCertusers = _getCertuses();
 			uint index = _getUniqueCertUserPos(identityId, certnumber);
 			require(index != nullIndex);
@@ -210,18 +205,20 @@ contract MetaCoin is Ownable{
 			return (allCertusers[index].username, allCertusers[index].identityId, allCertusers[index].certnumber, allCertusers[index].orgname
 				, allCertusers[index].hashstr, allCertusers[index].useraddress, allCertusers[index].CA, allCertusers[index].CAAddress
 				, uint32(allCertusers[index].userstate), uint32(allCertusers[index].readyTime));
-
+			
 		}
-		//报错，返回的是个tuple，solidity不支持该类型。 只有内部的函数可以返回struct
-		/*function getFirstCertUser1(string identityId, string certnumber) public view returns (CertUser) {
-			CertUser[] memory allCertusers = _getCertuses();
-			uint index = _getUniqueCertUserPos(identityId, certnumber);
+
+		function getCertUserByAddressAndIndex(address certUserAddress, uint index) public view returns
+		(string username, string identityId1, string certnumber1, string orgname, string hashstr
+		, address useraddress1, string CA, address CAAddress,uint32 userstate, uint32 readyTime){
 			require(index != nullIndex);
-			require(allCertusers[index].useraddress == msg.sender || allCertusers[index].CAAddress == msg.sender);
-			return allCertusers[index];
+			CertUser memory currentCertUser = _getCertuses()[index];
 
-		}*/
-
+			return (currentCertUser.username, currentCertUser.identityId, currentCertUser.certnumber, currentCertUser.orgname
+			, currentCertUser.hashstr, currentCertUser.useraddress, currentCertUser.CA, currentCertUser.CAAddress
+			, uint32(currentCertUser.userstate), uint32(currentCertUser.readyTime));
+		}
+		
 		function getCertUserOrgname(string identityId, string certnumber) public view returns (string) {
 			uint index = _getUniqueCertUserPos(identityId, certnumber);
 			if(index == nullIndex) {
@@ -229,7 +226,7 @@ contract MetaCoin is Ownable{
 			}
 			return certusers[index].orgname;
 		}
-
+		
 		//改变证书状态
 		function changeCertUserState(string identityId, string certnumber, uint state) public payable returns (bool isChanged) {
 			CertUser storage certUser = certusers[_getUniqueCertUserPos(identityId, certnumber)];
@@ -241,16 +238,16 @@ contract MetaCoin is Ownable{
 				//require(_isReady(certUser));   //冷却时间
 				certUser.userstate = state;
 			}
-
+			
 			_triggerCooldown(certUser);
 		}
-
+		
 		 function _triggerCooldown(CertUser storage certUser) internal {
 			certUser.readyTime = uint32(now + cooldownTime);
 		  }
 
 		  function _isReady(CertUser storage certUser) internal view returns (bool) {
 			  return (certUser.readyTime <= now);
-		  }
-
+		  }	
+		  
 }
