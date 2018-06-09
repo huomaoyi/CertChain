@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>登录</title>
+  <!-- import css-->
+  <link rel="stylesheet" href="css/login/index.css">
+  <link rel="stylesheet" href="css/login/manager.css">
+  <link rel="stylesheet" media="screen" href="css/login/style.css">
+</head>
+<body>
+
+<!-- particles.js container -->
+
+<div id="app">
+ 
+  <div class="login-wrap">    
+    <div class="login">
+      <div class="login-top">
+        <a href="#" class="login-logo" class="img"></a>
+        <p class="logi-t-p">BitCheck证书验证平台</p>
+      </div>
+      <div class="login-box">
+        <el-tabs v-model="activeName"  @tab-click="handleClick">
+        <el-tab-pane label="账号登录" name="first">
+          <el-form  label-width="0" class="login-form">
+            <el-form-item label="用户名">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-user"></use>
+              </svg>
+              <el-input placeholder="用户名/手机号/邮箱"></el-input>
+            </el-form-item>
+            <el-form-item label="密码">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-password"></use>
+              </svg>
+              <el-input type="password" placeholder="密码"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitForm('ruleForm2')" class="login-btn">登录</el-button>
+            </el-form-item>
+            <div  class="forget-a"><a href="#">忘记密码</a></div>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="注册" name="second">
+          <el-form  label-width="0" class="login-form">
+            <el-form-item label="用户名">
+              <svg class="icon" aria-hidden="true">
+                  <use xlink:href="#icon-user"></use>
+                </svg>
+              <el-input placeholder="用户名/手机号/邮箱"></el-input>
+            </el-form-item>
+            <el-form-item label="登陆密码">
+              <svg class="icon" aria-hidden="true">
+                  <use xlink:href="#icon-password"></use>
+              </svg>
+              <el-input type="password" placeholder="登陆密码"></el-input>
+            </el-form-item>
+            <el-form-item label="确认登陆密码">
+              <svg class="icon" aria-hidden="true">
+                  <use xlink:href="#icon-password"></use>
+              </svg>
+              <el-input type="password" placeholder="确认登陆密码"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitForm('ruleForm2')" class="login-btn">注册</el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+      </div>
+    </div>
+    <div id="particles-js" style="background-image: url('images/login-bj.jpg')"></div>
+  </div>
+  
+  </div>
+    <!-- import Vue before Element -->
+    <script src="js/lib/iconfont.js"></script>
+    <script src="js/lib/jquery.min.js"></script>
+    <script src="js/lib/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="js/login/login.js"></script>
+    <script>
+      new Vue({
+        el: '#app',
+        data: function() {
+          return { activeName: 'first' }
+        }
+      })
+  
+      $(".el-input__inner").focus(function(){
+        $(".login-btn").addClass("cur");
+      })
+    </script>
+<!-- scripts -->
+<script src="js/lib/particles.json"></script>
+<script src="js/lib/app.js"></script>
+
+<!-- stats.js -->
+<script src="js/lib/stats.js"></script>
+
+</body>
+</html>
