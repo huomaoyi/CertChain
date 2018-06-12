@@ -4,6 +4,7 @@ dist/
 npm-debug.log
 yarn-error.log
 truffle.js
+build/
 
 # Editor directories and files
 .idea

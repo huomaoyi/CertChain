@@ -4,9 +4,9 @@ require('babel-register')
 module.exports = {
   networks: {
     development: {
-      host: '192.168.3.57',
-      port: 9545,
-       gas: 4600000,
+      host: '172.17.0.2',
+      port: 8545,
+       gas: 6600000,
       network_id: '*' // Match any network id
     }
   }

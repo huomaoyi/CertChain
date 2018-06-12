@@ -1,7 +1,5 @@
 // Import the page's CSS. Webpack will know what to do with it.
 import "../stylesheets/app.css";
-import "../stylesheets/main/main.css";
-import "../stylesheets/main/style.css";
 
 // Import libraries we need.
 import { default as Web3} from 'web3';
@@ -18,8 +16,16 @@ var MetaCoin = contract(metacoin_artifacts);
 // For application bootstrapping, check out window.addEventListener below.
 var accounts;
 var account;
-var certUsers;
-
+var indexArray = new Array();
+var intoFunctionCount = 0;
+var CreateCertUserEvent ; // 添加时间监听？？？？？？？？？？？？？？？？？？？？？？？？？？？？？？？？？
+var myLoalStorage = window.localStorage;
+var temp = new Array();
+temp[0] = 0;
+temp[1] = 1;
+myLoalStorage.setItem("0x6b5344B29E8E7e8e63f61321838f590fF9e7fB95",temp);   // temp -->[1,2]  temp[0]=1, temp[1]=,   ;
+console.log(myLoalStorage.getItem("0x6b5344B29E8E7e8e63f61321838f590fF9e7fB95"));
+console.log(myLoalStorage.getItem(0x6b5344B29E8E7e8e63f61321838f590fF9e7fB95));
 window.App = {
   start: function() {
     var self = this;
@@ -59,13 +65,13 @@ window.App = {
     var status = document.getElementById("status3");
     status.innerHTML = message;
   },
-  getCertUserFirst: function() {
+    addDefaultCertUsers: function() {
     var self = this;
    // this.setStatus3("getCertUserFirst ......");
     var meta;
     MetaCoin.deployed().then(function(instance) {
       meta = instance;
-      return meta.getCertUserFirst({from: account});
+      return meta.addDefaultCertUsers({from: account});
     }).then(function(username) {
        var a = document.getElementById("status3");
 	  a.innerHTML=username;
@@ -78,11 +84,11 @@ window.App = {
   },
 //	添加CA
    addCA:function() {
-    var self = this;
+    var self = this;   
     var meta;
 	var receiver = document.getElementById("add_CAAddress").value;
 	document.getElementById("ca_status").innerHTML= "Initiating transaction... (please wait)";
-
+	
     MetaCoin.deployed().then(function(instance) {
       meta = instance;
       return meta.addCA(receiver,{from: account});
@@ -101,15 +107,18 @@ window.App = {
   },
 //	获取CA
    getCAByAddress:function() {
-    var self = this;
+    var self = this;   
     var meta;
 	var receiver = document.getElementById("add_CAAddress").value;
 	document.getElementById("ca_status").innerHTML= "Initiating transaction... (please wait)";
-
+	
     MetaCoin.deployed().then(function(instance) {
       meta = instance;
       return meta.getCAByAddress(receiver,{from: account});
     }).then(function(data) {
+        if(data == 1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77) {
+            data = "doesn't exists";
+        }
 		document.getElementById("ca_status").innerHTML= data + "---get success";
        console.log(data);
     }).catch(function(e) {
@@ -119,11 +128,11 @@ window.App = {
   },
   //删除CA
    deleteCA:function() {
-    var self = this;
+    var self = this;   
     var meta;
 	var receiver = document.getElementById("add_CAAddress").value;
 	document.getElementById("ca_status").innerHTML= "Initiating transaction... (please wait)";
-
+	
     MetaCoin.deployed().then(function(instance) {
       meta = instance;
       return meta.deleteCA(receiver,{from: account});
@@ -135,7 +144,7 @@ window.App = {
        document.getElementById("ca_status").innerHTML= "error. see log";
     });
   },
-
+  
 
 //添加证书
   createCertUser: function() {
@@ -144,16 +153,16 @@ window.App = {
     var identityId = document.getElementById("identityId").value;
     var certnumber = document.getElementById("certnumber").value;
     var orgname = document.getElementById("orgname").value;
-    var hashstr = document.getElementById("hashstr").value;
+    var hashstr = document.getElementById("hashstr").value; 
     var useraddress = document.getElementById("useraddress").value;
     var CA = document.getElementById("CA").value;
     var CAAddress = document.getElementById("CAAddress").value;
-
+	
     this.setStatus2("Initiating createCertUser transaction... (please wait)");
     var meta;
     MetaCoin.deployed().then(function(instance) {
       meta = instance;
-      return meta.createCertUser(username, identityId, certnumber, orgname, hashstr, useraddress, CA, CAAddress, {from: account});
+      return meta.createCertUser(username, identityId, certnumber, orgname, hashstr, useraddress, CA, CAAddress, {from: account});	  
     }).then(function(data) {
 		console.log(data);// 还是获取不到data
 		 self.setStatus2(" CertUser Transaction finished:     " + data);
@@ -166,7 +175,7 @@ window.App = {
 // 验证证书有效
   verrifyCertUser:function() {
 	var self = this;
-	var meta;
+	var meta; 
 	var identityId = document.getElementById("verify_identityId").value;
 	var certnumber = document.getElementById("verify_certnumber").value;
 	var isValid = document.getElementById("verify_status");
@@ -181,12 +190,12 @@ window.App = {
       console.log(e);
       isValid.innerHTML = "Error verify; see log.";
     });
-
+	  
   },
   // 获取用户的第一个证书
   getFirstCertUser:function() {
 	var self = this;
-	var meta;
+	var meta; 
 	var identityId = document.getElementById("verify_identityId").value;
 	var certnumber = document.getElementById("verify_certnumber").value;
 	var isValid = document.getElementById("verify_status");
@@ -202,72 +211,120 @@ window.App = {
       isValid.innerHTML="Error verify; see log.";
     });
   },
+// 列出某用户的所有证书的数组长度及索引
+    getArrayIndex:function() {
+        var self = this;
+        var meta;
+        var userAddress = document.getElementById("listall_cert").value;
+        MetaCoin.deployed().then(function(instance) {
+            meta = instance;
+            return meta.getArrayIndex(userAddress, {from: account});
+        }).then(function(list) {
+            console.log("return:"+list);    //一定要用字符串拼接来把结果转成字符串，不然一直显示BigNumber
+            console.log("0:" + list[0]);
+        }).catch(function(e) {
+            console.log(e);
+        });
+    },
 
-// 列出某用户的所有证书   certUsers
+// 列出某用户的所有证书   certUsers                     ????????????????????????????????????? ?????????????????????????????????????
   getAllCertUsers:function() {
+      var self = this;
+      var meta;
+      var userAddress = document.getElementById("listall_cert").value;
+      var arr1 = new Array;
+      arr = myLoalStorage.getItem(userAddress);
+      console.log("getAllCertUsers:" + myLoalStorage.getItem(userAddress));
+      console.log(myLoalStorage.getItem(userAddress)[0]);
+      console.log(myLoalStorage.getItem(userAddress)[1]);
+      console.log(myLoalStorage.getItem(userAddress)[2]);
+      console.log(myLoalStorage.getItem(userAddress)[3]);
+      console.log(myLoalStorage.getItem(userAddress)[4]);
+      //console.log(myLoalStorage.getItem(userAddress)[2] + "");
+      console.log(arr1.length);
+      var arr = new Array;
+      arr = [1,2];
+
+
+
+      for (var theindex = 0; theindex < arr.length; theindex++) {
+          var tempIndex = theindex;
+          MetaCoin.deployed().then(function (instance, tempIndex) {
+              meta = instance;
+              console.log('tempIndex: ' + tempIndex);  //parseInt(arr[index++])
+              return meta.getCertUserByAddressAndIndex(userAddress, parseInt(arr[tempIndex]), {from: account});
+          }).then(function (index) {
+              console.log("index: " + index);
+              var state;
+              var i = 1;
+              if (index[8].valueOf() == 0) state = "正常";
+              else if (index[8].valueOf() == 1) state = "已锁定";
+              else if (index[8].valueOf() == 2) state = "已失效";
+              isValid.innerHTML += index[0] + '&emsp;' + index[3] + '&emsp;' + '<button onclick="App.changeCertUserState(1)">' + state + '</button><br/>';
+          }).catch(function (e) {
+              console.log(e);
+              document.getElementById("listDetails").innerHTML = "Error verify; see log.";
+          });
+      }
+  },
+
+
+    // 通过索引遍历证书                          ????????????????????????????????????? ?????????????????????????????????????
+  getCertUserByAddressAndIndex:function() {
     var self = this;
-	var meta;
-	MetaCoin.deployed().then(function(instance) {
-      meta = instance;
-      return meta.getAllCertUsers({from: account});
-    }).then(function(list) { // 返回string[]  cernumber + ":" + orgname + ":" + userstate + ":" + identityId;
-		var innerHtml =
-			'<tr><td>20180604</td>&emsp;<td>火毛依团队</td>&emsp;<td><button id="CertUserState" onclick="App.changeCertUserState()">正常</button></td></tr><br/>'
-	      + '<tr><td>20180604</td>&emsp;<td>火毛依团队</td>&emsp;<td><button id="CertUserState" onclick="App.changeCertUserState()">锁定</button></td></tr><br/>'
-	      + '<tr><td>20180604</td>&emsp;<td>火毛依团队</td>&emsp;<td><button id="CertUserState" onclick="App.changeCertUserState()">已失效</button></td></tr><br/>';
-		//这里的<tr>在最后没有生效，不知道为啥
-		console.log("return" + list);
-		for(var i = 0; i < list.length; i++) {
-			var array = new Array();
-			array = list[i].split(":");
-			var state;
-			if(array[2].valueOf() == 0) state = "正常";
-			else if(array[2].valueOf() == 1) state = "锁定";
-			else if(array[2].valueOf() == 2) state = "已失效";
-			innerHtml +=  '<tr id=tr' + i.valueOf() +'><td>'+ array[0]+'</td><td>'+ array[1] +'</td><td><button id="CertUserState' + i.valueOf()
-						+'" onclick="App.changeCertUserState()">'+ state +'</button></td></tr>';   //TO DO 参数要怎么传？
-		}
-		document.getElementById("listDetails").innerHTML = innerHtml;
+    var meta;
+    var isValid = document.getElementById("listDetails");
+    var certUserAddress = document.getElementById("listall_cert").value;
+    var count =0;
+    MetaCoin.deployed().then(function(instance) {
+        meta = instance;
+        return meta.getCertUserByAddressAndIndex(certUserAddress, indexArray[intoFunctionCount++], {from: account});
+    }).then(function(index) {
+        console.log(index);
+        var state;
+        var i = 1;
+        if(index[8].valueOf() == 0) state = "正常";
+        else if(index[8].valueOf() == 1) state = "已锁定";
+        else if(index[8].valueOf() == 2) state = "已失效";
+        isValid.innerHTML += index[0]+ '&emsp;' + index[3] + '&emsp;' + '<button onclick="App.changeCertUserState(1)">' +state +'</button><br/>';
     }).catch(function(e) {
-      console.log(e);
-      self.setStatus("Error ; see log.");
+        console.log(e);
+        document.getElementById("listDetails").innerHTML="Error verify; see log.";
     });
   },
 
-  // 列出用户的第一个证书，可改变状态
+  // 弃用-----------列出用户的第一个证书，可改变状态，需要添加按钮
   listFirstCertUser:function() {
 	var self = this;
-	var meta;
+	var meta; 
 	var identityId = document.getElementById("listall_identityId").value;
 	var certnumber = document.getElementById("listall_certnumber").value;
 	var isValid = document.getElementById("listDetails");
-	var innerHtml="";
+	var innerHtml=""; 
 	isValid.innerHTML = "wait！！！";
 	var count =0;
-	while(count++  < 4){
 	MetaCoin.deployed().then(function(instance) {
       meta = instance;
       return meta.getFirstCertUser(identityId, certnumber, {from: account});
-    }).then(function(index) {
+    }).then(function(index) {		
 		var state;
 		var i = 1;
 		if(index[8].valueOf() == 0) state = "正常";
 		else if(index[8].valueOf() == 1) state = "已锁定";
 		else if(index[8].valueOf() == 2) state = "已失效";
-		innerHtml += index[0]+ '&emsp;' + index[3] + '&emsp;' + '<button onclick="App.changeCertUserState(1)">' +state +'</button><br/>';
-		isValid.innerHTML = innerHtml;
+		innerHtml += index[0]+ '&emsp;' + index[3] + '&emsp;' + '<button onclick="App.changeCertUserState(1)">' +state +'</button><br/>';		
+		isValid.innerHTML = innerHtml;		
 		console.log(index);
     }).catch(function(e) {
       console.log(e);
       document.getElementById("listDetails").innerHTML="Error verify; see log.";
     });
-	}
   },
-
+  
   // 改变证书状态
   changeCertUserState:function(state) {
     var self = this;
-	var meta;
+	var meta; 
 	document.getElementById("list_status").innerHTML="----------wait";
 	var identityId = document.getElementById("listall_identityId").value;
 	var certnumber = document.getElementById("listall_certnumber").value;
@@ -280,7 +337,7 @@ window.App = {
     }).catch(function(e) {
       console.log(e);
       document.getElementById("list_status").innerHTML=="Error; see log.";
-    });
+    });	  
   },
 
   refreshBalance: function() {
@@ -299,7 +356,7 @@ window.App = {
     });
   },
 
-
+  
   sendCoin: function() {
     var self = this;
 
@@ -335,6 +392,17 @@ window.addEventListener('load', function() {
     // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
     window.web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:9545"));
   }
+
+    if(!window.localStorage){
+        alert("浏览器不支持localstorage");
+    }else{
+        var storage=window.localStorage;
+        storage.setItem("hello", "test localstorage: hello world");
+        console.log(storage.getItem("hello"));
+        console.log(typeof storage["hello"]);
+        storage.removeItem("hello");
+        console.log(storage.getItem("hello"));
+    }
 
   App.start();
 });
