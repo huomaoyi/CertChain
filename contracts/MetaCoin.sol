@@ -46,7 +46,7 @@ contract MetaCoin is Ownable{
 		addDefaultCertUsers();
 	}
 
-	function addDefaultCertUsers() public payable {
+	function addDefaultCertUsers() public  {
 		createCertUser("username", "11", "11", "11", "11", ownerOfContract, "CA", ownerOfContract);
 		createCertUser("username", "22", "22", "22", "22", ownerOfContract, "CA", ownerOfContract);
 		createCertUser("username", "33", "33", "33", "33", ownerOfContract, "CA", ownerOfContract);
